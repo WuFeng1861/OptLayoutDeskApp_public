@@ -1,0 +1,64 @@
+{
+  "name": "optlayerdesktop",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "echarts": "^5.6.0",
+    "echarts-gl": "^2.0.9",
+    "vue": "^3.4.38"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.3",
+    "autoprefixer": "^10.4.17",
+    "electron": "^30.0.1",
+    "electron-builder": "^24.13.3",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.2",
+    "vite-plugin-electron": "^0.28.6",
+    "vite-plugin-electron-renderer": "^0.14.5",
+    "vue-tsc": "^2.1.4"
+  },
+  "main": "dist-electron/main.js",
+  "build": {
+    "appId": "com.optlayout.web-layout",
+    "productName": "OptLayout",
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "./public/logo.ico",
+      "installerHeaderIcon": "./public/logo.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "perMachine": false
+    },
+    "win": {
+      "icon": "./public/logo.ico"
+    },
+    "mac": {
+      "icon": "./public/logo.ico"
+    },
+    "linux": {
+      "icon": "./public/logo.ico"
+    },
+    "files": [
+      "dist/**/*",
+      "src/**/*",
+      "package.json",
+      "build/**/*",
+      "dist-electron/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "electron_dist"
+    }
+  }
+}

@@ -18,7 +18,6 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
     const [channel, ...omit] = args
     return ipcRenderer.invoke(channel, ...omit)
   },
-
-  // You can expose other APTs you need here.
-  // ...
+  // 添加打开文件的方法
+  openFile: () => ipcRenderer.invoke('dialog:openFile'),
 })

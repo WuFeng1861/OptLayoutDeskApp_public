@@ -220,10 +220,104 @@ watch(selectedObjective, (newValue) => {
     objectiveType.value = 'unify'
   }
 })
+
+// 处理打开文件
+const handleOpenFile = async () => {
+  try {
+    let content = await window.ipcRenderer.openFile()
+    // 将NaN替换成null
+    content = content.replace(/NaN/g, 'null')
+    if (content) {
+      const data = JSON.parse(content)
+      const fieldOptBlock = data['FIELDOPT INPUT BLOCK']
+      console.log(fieldOptBlock);
+      if (!fieldOptBlock) {
+        throw new Error('Invalid file format')
+      }
+
+      // 更新 numberOfWells
+      numberOfWells.value = fieldOptBlock.n.VALUE
+
+      // 更新 targetPoints
+      targetPoints.value = fieldOptBlock.PCM.VALUE.map((point: number[]) => ({
+        x: point[0].toString(),
+        y: point[1].toString(),
+        z: point[2].toString()
+      }))
+
+      // 更新 entryDirections
+      entryDirections.value = fieldOptBlock.VCM.VALUE.map((dir: number[]) => ({
+        x: dir[0].toString(),
+        y: dir[1].toString(),
+        z: dir[2].toString()
+      }))
+
+      // 更新 kickoffPoints
+      kickoffPoints.value = fieldOptBlock.PKzM.VALUE.map((depth: number[], index: number) => ({
+        p1z: depth[0],
+        v1x: fieldOptBlock.VKM.VALUE[index][0],
+        v1y: fieldOptBlock.VKM.VALUE[index][1],
+        v1z: fieldOptBlock.VKM.VALUE[index][2]
+      }))
+
+      // 更新 doglegPoints
+      doglegPoints.value = fieldOptBlock.DLSM.VALUE.map((dogleg: number[], index: number) => ({
+        dogleg: dogleg[0],
+        radius: fieldOptBlock.rM.VALUE[index][0]
+      }))
+
+      // 更新 computeState
+      computeState.value = {
+        ...computeState.value,
+        problemType: '1-Site-N-Wells',
+        cluster_min: fieldOptBlock.cluster_min.VALUE,
+        cluster_max: fieldOptBlock.cluster_max.VALUE,
+        sitePreparationCost: fieldOptBlock.cst_Site.VALUE,
+        numberOfClusterSizes: fieldOptBlock.slot.VALUE.length,
+        clusterSizes: fieldOptBlock.slot.VALUE.map((size: number, index: number) => ({
+          size,
+          cost: fieldOptBlock.cst_WH.VALUE[index]
+        })),
+        ranges: {
+          x: {
+            mode: Array.isArray(fieldOptBlock.XRange.VALUE) ? 'Manual' : 'Auto',
+            value: Array.isArray(fieldOptBlock.XRange.VALUE) ? JSON.stringify(fieldOptBlock.XRange.VALUE) : ''
+          },
+          y: {
+            mode: Array.isArray(fieldOptBlock.YRange.VALUE) ? 'Manual' : 'Auto',
+            value: Array.isArray(fieldOptBlock.YRange.VALUE) ? JSON.stringify(fieldOptBlock.YRange.VALUE) : ''
+          },
+          radius: {
+            mode: fieldOptBlock.cst_radiusM.VALUE === 'Auto' ? 'Auto' : 'Manual',
+            value: fieldOptBlock.cst_radiusM.VALUE === 'Auto' ? '' : fieldOptBlock.cst_radiusM.VALUE[0][0].toString()
+          },
+          resolution: {
+            mode: fieldOptBlock.resolution.VALUE === 'Auto' ? 'Auto' : 'Manual',
+            value: fieldOptBlock.resolution.VALUE === 'Auto' ? '' : fieldOptBlock.resolution.VALUE.toString()
+          },
+          wellNo: { mode: 'All', value: '[1,3]' },
+          initialGuess: { mode: 'Auto', value: '[0, 0]' }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error reading file:', error)
+  }
+}
 </script>
 
 <template>
   <div class="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <!-- 添加打开文件按钮 -->
+    <div class="p-4 bg-white border-b">
+      <button
+          @click="handleOpenFile"
+          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+      >
+        打开文件
+      </button>
+    </div>
+
     <div class="flex-1 grid grid-cols-[400px,1fr]">
       <!-- Left Panel -->
       <ConfigurationPanel :number-of-wells="numberOfWells" />

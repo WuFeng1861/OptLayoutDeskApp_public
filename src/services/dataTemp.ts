@@ -105,6 +105,7 @@ const CurvesDataObj: { [key: string]: CurvesData } = {
 
 const ContourIndexListRef = ref<{ [key: number]: boolean }>({});
 const CurvesIndexListRef = ref<{ [key: number]: boolean }>({});
+let SiteData: number[][] = [];
 
 for (let i = 0; i < 30; i++) {
   ContourIndexListRef.value[i] = true;
@@ -137,7 +138,7 @@ export const getCurvesShowData = () => {
   return result;
 };
 
-export const changeDataShow = (index: number, isDelete: boolean) => {
+export const changeContourShow = (index: number, isDelete: boolean) => {
   ContourIndexListRef.value[index] = !isDelete;
 };
 
@@ -154,6 +155,9 @@ export const getCurvesIndexListRef = () => {
 };
 
 export const getSiteData = () => {
+  if (SiteData.length > 0) {
+    return SiteData;
+  }
   let result = [];
   let resultObj = {};
   let keys = Object.keys(CurvesIndexListRef.value);
@@ -171,7 +175,27 @@ export const getSiteData = () => {
   for (let key in resultObj) {
     result.push(resultObj[key]);
   }
+  SiteData = result;
   return result;
+};
+
+export const changeSiteContourShow = (index: number, isDelete: boolean) => {
+  let siteIndex = SiteData[index];
+  for (let i = 0; i < siteIndex.length; i++) {
+    changeContourShow(siteIndex[i], isDelete);
+  }
+};
+
+export const changeSiteCurvesShow = (index: number, isDelete: boolean) => {
+  let siteIndex = SiteData[index];
+  for (let i = 0; i < siteIndex.length; i++) {
+    changeCurvesShow(siteIndex[i], isDelete);
+  }
+};
+
+export const changeSiteShow = (index: number, isDelete: boolean) => {
+  changeSiteContourShow(index, isDelete);
+  changeSiteCurvesShow(index, isDelete);
 };
 
 

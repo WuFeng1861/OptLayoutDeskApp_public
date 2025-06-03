@@ -4,7 +4,7 @@ import * as echarts from 'echarts';
 import 'echarts-gl';
 import {
   changeCurvesShow,
-  changeDataShow,
+  changeContourShow,
   getContourIndexListRef,
   getContourShowData,
   getCurvesIndexListRef,
@@ -284,7 +284,7 @@ function initChart() {
 }
 
 const changeCostContourIndexShow = (index: number, value: boolean) => {
-  changeDataShow(index, value);
+  changeContourShow(index, value);
   updateGrid3dData();
 };
 const changeCurvesIndexShow = (index: number, value: boolean) => {

@@ -322,7 +322,7 @@ const handleOpenFile = async () => {
       <!-- Left Panel -->
       <ConfigurationPanel :number-of-wells="numberOfWells" />
 
-      <!-- Right Panel -->
+      <!--&lt;!&ndash; Right Panel &ndash;&gt;-->
       <VisualizationPanel />
     </div>
   </div>

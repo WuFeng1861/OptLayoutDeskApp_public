@@ -37,6 +37,9 @@ import {lineData28} from './testData/lineData-28';
 import {lineData29} from './testData/lineData-29';
 import {lineData30} from './testData/lineData-30';
 
+let wellNum = 30;
+let siteNum = 0;
+let SiteData: number[][] = [];
 
 const ContourDataObj: { [key: string]: CostContourData } = {
   '0': ContourData1,
@@ -105,12 +108,20 @@ const CurvesDataObj: { [key: string]: CurvesData } = {
 
 const ContourIndexListRef = ref<{ [key: number]: boolean }>({});
 const CurvesIndexListRef = ref<{ [key: number]: boolean }>({});
-let SiteData: number[][] = [];
+
 
 for (let i = 0; i < 30; i++) {
   ContourIndexListRef.value[i] = true;
   CurvesIndexListRef.value[i] = true;
 }
+
+export const getWellNum = () => {
+  return wellNum;
+};
+
+export const getSiteNum = () => {
+  return siteNum;
+};
 
 export const getContourShowData = () => {
   // 遍历ContourIndexList返回新的数组
@@ -138,14 +149,6 @@ export const getCurvesShowData = () => {
   return result;
 };
 
-export const changeContourShow = (index: number, isDelete: boolean) => {
-  ContourIndexListRef.value[index] = !isDelete;
-};
-
-export const changeCurvesShow = (index: number, isDelete: boolean) => {
-  CurvesIndexListRef.value[index] = !isDelete;
-};
-
 export const getContourIndexListRef = () => {
   return ContourIndexListRef;
 };
@@ -162,11 +165,11 @@ export const getSiteData = () => {
   let resultObj = {};
   let keys = Object.keys(CurvesIndexListRef.value);
   for (let i = 0; i < keys.length; i++) {
-    let key = keys[i];
+    let key = Number(keys[i]);
     let x = Number(CurvesDataObj[key]['CURVES']['EAST'][0]);
     let y = Number(CurvesDataObj[key]['CURVES']['NORTH'][0]);
     if (!resultObj[`${x}-${y}`]) {
-      resultObj = [key];
+      resultObj[`${x}-${y}`] = [key];
     } else {
       resultObj[`${x}-${y}`].push(key);
     }
@@ -176,7 +179,40 @@ export const getSiteData = () => {
     result.push(resultObj[key]);
   }
   SiteData = result;
+  siteNum = result.length;
   return result;
+};
+
+export const changeContourShow = (index: number, isDelete: boolean) => {
+  ContourIndexListRef.value[index] = !isDelete;
+};
+
+export const changeCurvesShow = (index: number, isDelete: boolean) => {
+  CurvesIndexListRef.value[index] = !isDelete;
+};
+
+export const changeWellShow = (index: number, isDelete: boolean) => {
+  changeContourShow(index, isDelete);
+  changeCurvesShow(index, isDelete);
+};
+
+export const changeAllDataShow = (isDelete: boolean) => {
+  for (let i = 0; i < wellNum; i++) {
+    changeContourShow(i, isDelete);
+    changeCurvesShow(i, isDelete);
+  }
+}
+
+export const changeAllCurvesShow = (isDelete: boolean) => {
+  for (let i = 0; i < wellNum; i++) {
+    changeCurvesShow(i, isDelete);
+  }
+};
+
+export const changeAllContourShow = (isDelete: boolean) => {
+  for (let i = 0; i < wellNum; i++) {
+    changeContourShow(i, isDelete);
+  }
 };
 
 export const changeSiteContourShow = (index: number, isDelete: boolean) => {
@@ -198,4 +234,7 @@ export const changeSiteShow = (index: number, isDelete: boolean) => {
   changeSiteCurvesShow(index, isDelete);
 };
 
+
+// init all data 初始化所有数据
+getSiteData()
 

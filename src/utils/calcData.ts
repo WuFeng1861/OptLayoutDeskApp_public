@@ -7,13 +7,13 @@ export type CostContourData = {
 };
 
 export type CurvesData = {
-  'CURVES' : {
-    "MD": number[],
-    "EAST": number[],
-    "NORTH" : number[],
-    "TVD": number[],
-    "INCL": number[],
-    "AZ": number[]
+  'CURVES': {
+    'MD': number[],
+    'EAST': number[],
+    'NORTH': number[],
+    'TVD': number[],
+    'INCL': number[],
+    'AZ': number[]
   }
 }
 
@@ -46,7 +46,7 @@ export const formatData_contour = (data: CostContourData[]): {
   minY: number,
   maxY: number,
 } => {
-  if  (!data || data.length === 0) {
+  if (!data || data.length === 0) {
     return {
       data: [],
       z: [],
@@ -80,7 +80,6 @@ export const formatData_contour = (data: CostContourData[]): {
       z[i].push('-');
     }
   }
-  console.log(z, 1);
   
   // 遍历data，将数据填充到z矩阵和热力图中
   let resultPointsMap = new Map<string, number | '-'>();
@@ -112,16 +111,16 @@ export const formatData_contour = (data: CostContourData[]): {
       });
     });
   });
-  console.log(resultPointsMap);
+  
   // 遍历resultPointsMap，将数据添加到result中
   resultPointsMap.forEach((value, key) => {
     result.push(<[number, number, 0, number | '-']>[...key.split('-').map(Number), 0, value]);
   });
-  console.log('-----------------formatData_contour--------------------');
-  console.log(result);
-  console.log(z);
-  console.log(minCost, maxCost, minX, maxX, minY, maxY);
-  console.log('-----------------formatData_contour_end--------------------');
+  // console.log('-----------------formatData_contour--------------------');
+  // console.log(result);
+  // console.log(z);
+  // console.log(minCost, maxCost, minX, maxX, minY, maxY);
+  // console.log('-----------------formatData_contour_end--------------------');
   return {data: result, z, minCost, maxCost, minX, maxX, minY, maxY};
 };
 
@@ -129,19 +128,23 @@ export const formatData_contour = (data: CostContourData[]): {
 // 处理曲线数据
 export const formatData_curves = (data: CurvesData[]): {
   data: line3dData[][],
-  maxZ:number,
-  minZ: number
+  maxZ: number,
+  minZ: number,
+  // points: line3dData[]
 } => {
   if (!data || data.length === 0) {
     return {
       data: [],
       maxZ: 0,
-      minZ: 0
+      minZ: 0,
+      // points: []
     };
   }
   const result: line3dData[][] = [];
   let maxZ = -Infinity;
   let minZ = Infinity;
+  // const points: line3dData[] = [];
+  // const pointMap = {};
   data.forEach((item) => {
     const itemResult: line3dData[] = [];
     result.push(itemResult);
@@ -149,16 +152,22 @@ export const formatData_curves = (data: CurvesData[]): {
     for (let index = 0; index < keys.length; index++) {
       maxZ = Math.max(maxZ, item.CURVES.TVD[index]);
       minZ = Math.min(minZ, item.CURVES.TVD[index]);
-      itemResult.push([item.CURVES.EAST[index], item.CURVES.NORTH[index], item.CURVES.TVD[index]])
+      itemResult.push([item.CURVES.EAST[index], item.CURVES.NORTH[index], item.CURVES.TVD[index]]);
+      // if (item.CURVES.EAST[index] === item.CURVES.EAST[0] || item.CURVES.NORTH[index] === item.CURVES.NORTH[0]) {
+      //   pointMap[`${item.CURVES.EAST[index]},${item.CURVES.NORTH[index]},${item.CURVES.TVD[index]}`] = true;
+      // }
     }
   });
-  console.log('-----------------formatData_curves--------------------');
-  console.log(result);
-  console.log(maxZ, minZ);
-  console.log('-----------------formatData_curves_end--------------------');
+  // points.push(...Object.keys(pointMap).map((key) => key.split(',').map(Number) as line3dData));
+  // console.log(points);
+  // console.log('-----------------formatData_curves--------------------');
+  // console.log(result);
+  // console.log(maxZ, minZ);
+  // console.log('-----------------formatData_curves_end--------------------');
   return {
     data: result,
     maxZ,
-    minZ
+    minZ,
+    // points
   };
 };

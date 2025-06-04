@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import {ref, onMounted, onUnmounted} from 'vue';
+import {onMounted, onUnmounted, ref} from 'vue';
 import * as echarts from 'echarts';
 import 'echarts-gl';
-import {
-  changeCurvesShow,
-  changeContourShow,
-  getContourIndexListRef,
-  getContourShowData,
-  getCurvesIndexListRef,
-  getCurvesShowData
-} from '../services/dataTemp';
+import {getContourShowData, getCurvesShowData} from '../services/dataTemp';
 import {CostContourData, CurvesData, formatData_contour, formatData_curves} from '../utils/calcData';
 import {calculateGradientColor} from '../utils/colorUtil';
+import {
+  getAllIds,
+  getComponentViewDataRef,
+  getDefaultExpendIds,
+  getLayoutViewDataRef,
+  resolveTreeClicked,
+  TreeData
+} from '../services/treeControlData';
 
 // 生成costContour示例数据
 function generateCostContourData(list: CostContourData[]) {
@@ -28,33 +29,37 @@ function generateCostContourData(list: CostContourData[]) {
   };
 }
 
-
 // 生成line示例数据
 function generateLineData(list: CurvesData[]) {
   let result = formatData_curves(list);
   return {
     data: result.data,
     maxZ: result.maxZ,
-    minZ: result.minZ
+    minZ: result.minZ,
+    // points: result.points
   };
 }
 
-// const currentAngle = ref({alpha: 13, beta: -143});
-const currentAngle = ref({alpha: 48, beta: -46});
+const currentAngle = ref({alpha: 13, beta: -143});
+// const currentAngle = ref({alpha: 48, beta: -46});
 
 const chartContainer = ref<HTMLDivElement | null>(null);
 let chart: echarts.ECharts | null = null;
 const totalLength = ref(0);
 const feasibility = ref(0);
 
-const visualComponents = ref({
-  trajectory: true,
-  annotation: true,
-  costContour: true
-});
+const componentViewData = getComponentViewDataRef();
+const layoutViewData = getLayoutViewDataRef();
+const defaultExpendIds = getDefaultExpendIds();
+const defaultCheckedKeys = getAllIds();
+const componentTreeRef = ref<TreeData | null>(null);
+const layoutTreeRef = ref<TreeData | null>(null);
 
-const visualCostListRef = getContourIndexListRef();
-const visualCurvesListRef = getCurvesIndexListRef();
+
+const defaultProps = {
+  children: 'children',
+  label: 'label',
+};
 
 const buttons = ref([
   {label: 'Hold', action: () => console.log('Hold clicked')},
@@ -64,6 +69,9 @@ const buttons = ref([
 
 const Colors = ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8',
   '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'].reverse();
+
+const lineWidth = 4;
+const dotWidth = 15;
 
 function initGrid3dData() {
   if (!chart) return;
@@ -80,10 +88,23 @@ function initGrid3dData() {
       data: item,
       lineStyle: {
         color: '#000',
-        width: 4
-      }
+        width: lineWidth
+      },
+      animation: false
     };
   });
+
+  // let seriesDataDot = getGenerateLineData.points.map(function (item) {
+  //   return {
+  //     type: 'scatter3D',
+  //     data: [item],
+  //     symbolSize: dotWidth,
+  //     itemStyle: {
+  //       color: '#000',
+  //     },
+  //     animation: false
+  //   };
+  // });
 
 
   // 更新图表数据
@@ -95,12 +116,12 @@ function initGrid3dData() {
         const point = params.value;
         if (point[3]) {
           return `X: ${Number(point[0].toFixed(2))}<br/>` +
-          `Y: ${Number(point[1].toFixed(2))}<br/>`+
-          `value: ${point[3] === '-' ? '-' : Number(point[3].toFixed(2))}`
+              `Y: ${Number(point[1].toFixed(2))}<br/>` +
+              `value: ${point[3] === '-' ? '-' : Number(point[3].toFixed(2))}`;
         }
         return `X: ${point[0]}<br/>` +
-            `Y: ${point[1]}<br/>`+
-            `z: ${point[2]}`
+            `Y: ${point[1]}<br/>` +
+            `z: ${point[2]}`;
       }
     },
     xAxis3D: {
@@ -186,7 +207,8 @@ function initGrid3dData() {
           };
         })
       },
-      ...seriesDataLine
+      ...seriesDataLine,
+      // ...seriesDataDot,
     ]
   });
 }
@@ -199,18 +221,32 @@ function updateGrid3dData() {
 
   let lineData = getCurvesShowData();
   let getGenerateLineData = generateLineData(lineData);
-  console.log(getGenerateLineData.data.length, 'updateGrid3dData');
-  console.log(JSON.stringify(getGenerateLineData.data), 'updateGrid3dData');
+  // console.log(getGenerateLineData.data.length, 'updateGrid3dData');
+  // console.log(JSON.stringify(getGenerateLineData.data), 'updateGrid3dData');
   let seriesDataLine = getGenerateLineData.data.map(function (item) {
     return {
       type: 'line3D',
       data: item,
       lineStyle: {
         color: '#000',
-        width: 4
-      }
+        width: lineWidth
+      },
+      animation: false
     };
   });
+
+  // let seriesDataDot = getGenerateLineData.points.map(function (item) {
+  //   return {
+  //     type: 'scatter3D',
+  //     data: [item],
+  //     symbolSize: dotWidth,
+  //     itemStyle: {
+  //       color: '#000',
+  //     },
+  //     animation: false
+  //   };
+  // });
+
 
 
   let option = chart.getOption();
@@ -232,6 +268,7 @@ function updateGrid3dData() {
   ];
   if (getGenerateLineData.data.length > 0) {
     option.series.push(...seriesDataLine);
+    // option.series.push(...seriesDataDot);
   }
   chart.setOption(option, true);
 }
@@ -261,8 +298,8 @@ function initChart() {
 
   // 监听鼠标滚轮事件
   window.addEventListener('mousewheel', function (event) {
-    // 防止默认行为
-    event.preventDefault();
+    // // 防止默认行为
+    // event.preventDefault();
 
     // 获取当前的配置项
     if (!chartContainer.value) return;
@@ -283,12 +320,16 @@ function initChart() {
   });
 }
 
-const changeCostContourIndexShow = (index: number, value: boolean) => {
-  changeContourShow(index, value);
+const handleComponentCheck = (currentNode: TreeData, data: { checkedKeys }) => {
+  console.log(currentNode.id, data.checkedKeys.includes(currentNode.id), 'handleCheck');
+  resolveTreeClicked(currentNode.id, data.checkedKeys.includes(currentNode.id));
+  layoutTreeRef.value.setCheckedKeys(data.checkedKeys);
   updateGrid3dData();
 };
-const changeCurvesIndexShow = (index: number, value: boolean) => {
-  changeCurvesShow(index, value);
+const handleLayoutCheck = (currentNode: TreeData, data: { checkedKeys }) => {
+  console.log(currentNode.id, data.checkedKeys.includes(currentNode.id), 'handleCheck');
+  resolveTreeClicked(currentNode.id, data.checkedKeys.includes(currentNode.id));
+  componentTreeRef.value.setCheckedKeys(data.checkedKeys);
   updateGrid3dData();
 };
 
@@ -330,59 +371,36 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Controls -->
-    <div class="w-48 flex flex-col space-y-4">
-      <!-- Visual Components -->
-      <div class="bg-white border rounded-lg p-4">
-        <h3 class="text-sm font-medium mb-3 pb-2 border-b">Visual Components</h3>
-        <div class="space-y-2">
-          <label class="flex items-center space-x-2">
-            <input
-                type="checkbox"
-                v-model="visualComponents.trajectory"
-                :checked="true"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            >
-            <span class="text-sm">Trajectory</span>
-          </label>
-          <label class="flex items-center space-x-2">
-            <input
-                type="checkbox"
-                v-model="visualComponents.annotation"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            >
-            <span class="text-sm">Annotation</span>
-          </label>
-          <label class="flex items-center space-x-2">
-            <input
-                type="checkbox"
-                v-model="visualComponents.costContour"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            >
-            <span class="text-sm">CostContour</span>
-          </label>
-          <!--<label class="flex items-center space-x-2" v-for="(value, key, index) in visualCostListRef" >-->
-          <!--  <input-->
-          <!--      type="checkbox"-->
-          <!--      v-model="visualCostListRef[key]"-->
-          <!--      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"-->
-          <!--      @change="changeCostContourIndexShow(key, !value)"-->
-          <!--  >-->
-          <!--  <span class="text-sm">CostContour-{{Number(key)+1}}</span>-->
-          <!--</label>-->
-          <label class="flex items-center space-x-2" v-for="(value, key, index) in visualCurvesListRef">
-            <input
-                type="checkbox"
-                v-model="visualCurvesListRef[key]"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                @change="changeCurvesIndexShow(key, !value)"
-            >
-            <span class="text-sm">Line-{{ Number(key) + 1 }}</span>
-          </label>
-        </div>
+    <!--Controls-->
+    <div class="flex flex-col space-y-4 max-h-[calc(95vh-90px)]">
+      <!-- 组件视图树形控件 -->
+      <div class="bg-white border rounded-lg p-4 min-h-[130px] overflow-y-auto">
+        <h3 class="text-sm font-medium mb-3 pb-2 border-b">Visual by Components</h3>
+        <el-tree
+            ref="componentTreeRef"
+            :data="componentViewData"
+            node-key="id"
+            :props="defaultProps"
+            show-checkbox
+            @check="handleComponentCheck"
+            highlight-current
+            :default-expanded-keys="defaultExpendIds"
+            :default-checked-keys="defaultCheckedKeys"
+        />
+        <el-tree
+            ref="layoutTreeRef"
+            :data="layoutViewData"
+            node-key="id"
+            :props="defaultProps"
+            show-checkbox
+            @check="handleLayoutCheck"
+            highlight-current
+            :default-expanded-keys="defaultExpendIds"
+            :default-checked-keys="defaultCheckedKeys"
+        />
       </div>
 
-      <!-- Action Buttons -->
+      <!-- 操作按钮 -->
       <div class="space-y-2 mt-auto">
         <button
             v-for="btn in buttons"

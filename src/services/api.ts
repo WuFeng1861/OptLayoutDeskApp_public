@@ -7,14 +7,19 @@ interface Point {
 }
 
 interface KickoffPoint {
-  p1z: number
-  v1x: number
-  v1y: number
-  v1z: number
+  pkx: number
+  pky: number
+  pkz: number
+}
+
+interface KickoffDirection {
+  vkx: number
+  vky: number
+  vkz: number
 }
 
 interface DoglegPoint {
-  dogleg: number
+  dogleg: string
   radius: number
 }
 
@@ -44,6 +49,7 @@ export function buildRequestData(
   targetPoints: Point[],
   entryDirections: Point[],
   kickoffPoints: KickoffPoint[],
+  kickoffDirections: KickoffDirection[],
   doglegPoints: DoglegPoint[],
   computeState: ComputeState
 ) {
@@ -82,7 +88,7 @@ export function buildRequestData(
       "PKzM": {
         "DESCRIPTION": "kickoff depth, [Depth]",
         "UNIT": "m",
-        "VALUE": kickoffPoints.map(point => [point.p1z])
+        "VALUE": kickoffPoints.map(point => [point.pkz])
       },
       "MD_intervalM": {
         "DESCRIPTION": "measured depth interval in output data of well trajectory",
@@ -103,12 +109,16 @@ export function buildRequestData(
       "VKM": {
         "DESCRIPTION": "driling direction at the KOP, 3D, [EAST,NORTH,Depth]",
         "UNIT": "m",
-        "VALUE": kickoffPoints.map(point => [point.v1x, point.v1y, point.v1z])
+        "VALUE": kickoffDirections.map(dir => [dir.vkx, dir.vky, dir.vkz])
       },
       "DLSM": {
         "DESCRIPTION": "dogleg severity, [Depth]",
         "UNIT": "deg/30m",
-        "VALUE": doglegPoints.map(point => [point.dogleg])
+        "VALUE": doglegPoints.map(point => {
+          // 解析dogleg字符串，支持1-3个数值
+          const values = point.dogleg.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v))
+          return values.length > 0 ? values : [3] // 默认值为3
+        })
       },
       "rM": {
         "DESCRIPTION": "turning radius",
@@ -147,7 +157,7 @@ export function buildRequestData(
       "PKM": {
         "DESCRIPTION": "kickoff point, [East, North, Depth]",
         "UNIT": "m",
-        "VALUE": kickoffPoints.map(point => [NaN, NaN, point.p1z])
+        "VALUE": kickoffPoints.map(point => [point.pkx, point.pky, point.pkz])
       },
       "necon": {
         "DESCRIPTION": "non-equal constraints",

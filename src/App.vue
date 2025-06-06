@@ -14,14 +14,19 @@ interface Point {
 }
 
 interface KickoffPoint {
-  p1z: number
-  v1x: number
-  v1y: number
-  v1z: number
+  pkx: number
+  pky: number
+  pkz: number
+}
+
+interface KickoffDirection {
+  vkx: number
+  vky: number
+  vkz: number
 }
 
 interface DoglegPoint {
-  dogleg: number
+  dogleg: string
   radius: number
 }
 
@@ -76,10 +81,15 @@ const entryDirections = ref<Point[]>([{ x: '', y: '', z: '' }])
 
 // Kickoff state
 const kickoffPoints = ref<KickoffPoint[]>([{
-  p1z: -300.00,
-  v1x: 0,
-  v1y: 0,
-  v1z: -1.00
+  pkx: 0,
+  pky: 0,
+  pkz: -300.00
+}])
+
+const kickoffDirections = ref<KickoffDirection[]>([{
+  vkx: 0,
+  vky: 0,
+  vkz: -1.00
 }])
 
 const surfaces = ref<Surface[]>([{
@@ -95,7 +105,7 @@ const activeSurfaceIndex = ref(0)
 
 // Dogleg state
 const doglegPoints = ref<DoglegPoint[]>([{
-  dogleg: 2.00,
+  dogleg: 3.00,
   radius: 859.44
 }])
 
@@ -178,20 +188,31 @@ provide('updateNumberOfWells', (value: number) => {
   // Update kickoff points
   while (kickoffPoints.value.length < value) {
     kickoffPoints.value.push({
-      p1z: -300.00,
-      v1x: 0,
-      v1y: 0,
-      v1z: -1.00
+      pkx: 0,
+      pky: 0,
+      pkz: -300.00
     })
   }
   while (kickoffPoints.value.length > value) {
     kickoffPoints.value.pop()
   }
 
+  // Update kickoff directions
+  while (kickoffDirections.value.length < value) {
+    kickoffDirections.value.push({
+      vkx: 0,
+      vky: 0,
+      vkz: -1.00
+    })
+  }
+  while (kickoffDirections.value.length > value) {
+    kickoffDirections.value.pop()
+  }
+
   // Update dogleg points
   while (doglegPoints.value.length < value) {
     doglegPoints.value.push({
-      dogleg: 2.00,
+      dogleg: "3",
       radius: 859.44
     })
   }
@@ -207,6 +228,7 @@ provide('objectiveType', objectiveType)
 provide('formula', formula)
 provide('customFunctions', customFunctions)
 provide('kickoffPoints', kickoffPoints)
+provide('kickoffDirections', kickoffDirections)
 provide('doglegPoints', doglegPoints)
 provide('otherConstraints', otherConstraints)
 provide('surfaces', surfaces)
@@ -254,15 +276,21 @@ const handleOpenFile = async () => {
 
       // 更新 kickoffPoints
       kickoffPoints.value = fieldOptBlock.PKzM.VALUE.map((depth: number[], index: number) => ({
-        p1z: depth[0],
-        v1x: fieldOptBlock.VKM.VALUE[index][0],
-        v1y: fieldOptBlock.VKM.VALUE[index][1],
-        v1z: fieldOptBlock.VKM.VALUE[index][2]
+        pkx: NaN,
+        pky: NaN,
+        pkz: depth[0]
+      }))
+
+      // 更新 kickoff directions
+      kickoffDirections.value = fieldOptBlock.VKM.VALUE.map((dir: number[]) => ({
+        vkx: dir[0],
+        vky: dir[1],
+        vkz: dir[2]
       }))
 
       // 更新 doglegPoints
       doglegPoints.value = fieldOptBlock.DLSM.VALUE.map((dogleg: number[], index: number) => ({
-        dogleg: dogleg[0],
+        dogleg: dogleg.join(','),
         radius: fieldOptBlock.rM.VALUE[index][0]
       }))
 

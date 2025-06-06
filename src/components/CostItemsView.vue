@@ -88,16 +88,6 @@ watch(() => computeState.value.clusterSizes.length, (newLength) => {
             </tbody>
           </table>
         </div>
-
-        <!-- Economic Zone Threshold -->
-        <div class="grid grid-cols-[180px,1fr] items-center gap-2">
-          <span class="text-sm">Economic Zone Threshold</span>
-          <input
-            type="number"
-            v-model="computeState.economicZoneThreshold"
-            class="border rounded px-2 py-1 w-28 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          >
-        </div>
       </div>
     </div>
   </div>

@@ -1,68 +1,112 @@
 <script setup lang="ts">
-import { ref, inject, watch } from 'vue'
+import { ref, inject } from 'vue'
 
 const numberOfWells = inject<Readonly<Ref<number>>>('numberOfWells')!
 const kickoffPoints = inject<Ref<Array<{
-  p1z: number;
-  v1x: number;
-  v1y: number;
-  v1z: number;
+  pkx: number;
+  pky: number;
+  pkz: number;
 }>>>('kickoffPoints')!
+const kickoffDirections = inject<Ref<Array<{
+  vkx: number;
+  vky: number;
+  vkz: number;
+}>>>('kickoffDirections')!
+
+// 控制折叠面板的展开状态，默认全部展开
+const activeNames = ref(['depth', 'direction'])
 </script>
 
 <template>
-  <div class="p-4 max-h-[calc(100vh-500px)] overflow-y-auto">
-    <h2 class="text-lg font-serif mb-4 text-gray-800">Kickoff Depth (P<sub>Kz</sub>) & Direction (V<sub>K</sub>):</h2>
+  <div class="pb-6 max-h-[calc(100vh-500px)] overflow-y-auto">
+    <el-collapse v-model="activeNames" class="custom-collapse">
+      <!-- Kickoff Depth -->
+      <el-collapse-item title="Kickoff Depth (PKz)" name="depth">
+        <div class="table-scroll-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>PKx</th>
+                <th>PKy</th>
+                <th>PKz</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(point, index) in kickoffPoints" :key="index">
+                <td>{{ index + 1 }}</td>
+                <td>
+                  <input
+                    type="number"
+                    v-model="point.pkx"
+                    step="0.01"
+                  >
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    v-model="point.pky"
+                    step="0.01"
+                  >
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    v-model="point.pkz"
+                    step="0.01"
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </el-collapse-item>
 
-    <div class="border rounded max-h-[400px] overflow-y-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="bg-gray-50 border-b">
-            <th class="w-12 py-2 px-2 text-center font-medium border-r">#</th>
-            <th class="w-1/4 py-2 px-2 text-center font-medium border-r">P1z</th>
-            <th class="w-1/4 py-2 px-2 text-center font-medium border-r">V1x</th>
-            <th class="w-1/4 py-2 px-2 text-center font-medium border-r">V1y</th>
-            <th class="w-1/4 py-2 px-2 text-center font-medium">V1z</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(point, index) in kickoffPoints" :key="index" class="border-b last:border-b-0">
-            <td class="py-1.5 px-2 border-r text-center">{{ index + 1 }}</td>
-            <td class="py-1.5 px-2 border-r">
-              <input
-                type="number"
-                v-model="point.p1z"
-                class="w-full px-1.5 py-1 border rounded text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                step="0.01"
-              >
-            </td>
-            <td class="py-1.5 px-2 border-r">
-              <input
-                type="number"
-                v-model="point.v1x"
-                class="w-full px-1.5 py-1 border rounded text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                step="0.01"
-              >
-            </td>
-            <td class="py-1.5 px-2 border-r">
-              <input
-                type="number"
-                v-model="point.v1y"
-                class="w-full px-1.5 py-1 border rounded text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                step="0.01"
-              >
-            </td>
-            <td class="py-1.5 px-2">
-              <input
-                type="number"
-                v-model="point.v1z"
-                class="w-full px-1.5 py-1 border rounded text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                step="0.01"
-              >
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <!-- Direction -->
+      <el-collapse-item title="Direction (VK)" name="direction">
+        <div class="table-scroll-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>VKx</th>
+                <th>VKy</th>
+                <th>VKz</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(direction, index) in kickoffDirections" :key="index">
+                <td>{{ index + 1 }}</td>
+                <td>
+                  <input
+                    type="number"
+                    v-model="direction.vkx"
+                    step="0.01"
+                  >
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    v-model="direction.vky"
+                    step="0.01"
+                  >
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    v-model="direction.vkz"
+                    step="0.01"
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </el-collapse-item>
+    </el-collapse>
   </div>
 </template>
+
+<style scoped>
+@import '../styles/shared.css';
+</style>

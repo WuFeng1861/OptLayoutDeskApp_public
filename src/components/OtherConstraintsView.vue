@@ -26,42 +26,19 @@ const otherConstraints = inject<Ref<{
   numberOfSurfaces: number;
 }>>('otherConstraints')!
 
-const firstCurveWellsMode = ref('all')
-const firstCurveWellsValue = ref('')
-const secondCurveWellsMode = ref('all')
-const secondCurveWellsValue = ref('')
+// 控制折叠面板的展开状态
+const activeNames = ref(['drill-site', 'max-turn-angle', 'layers'])
 
-// Watch firstCurveWellsMode and update selectedWells
-watch([firstCurveWellsMode, firstCurveWellsValue], ([mode, value]) => {
-  if (mode === 'all') {
-    otherConstraints.value.firstCurveSelectedWells = [-1]
-  } else {
-    try {
-      const wells = JSON.parse(value)
-      if (Array.isArray(wells)) {
-        otherConstraints.value.firstCurveSelectedWells = wells
-      }
-    } catch (e) {
-      // Invalid JSON, keep current selection
-    }
-  }
-})
+// 控制各部分的Unify/Specify模式
+const drillSiteMode = ref('unify')
+const maxTurnAngleMode = ref('unify')
+const layersMode = ref('unify')
 
-// Watch secondCurveWellsMode and update selectedWells
-watch([secondCurveWellsMode, secondCurveWellsValue], ([mode, value]) => {
-  if (mode === 'all') {
-    otherConstraints.value.secondCurveSelectedWells = [-1]
-  } else {
-    try {
-      const wells = JSON.parse(value)
-      if (Array.isArray(wells)) {
-        otherConstraints.value.secondCurveSelectedWells = wells
-      }
-    } catch (e) {
-      // Invalid JSON, keep current selection
-    }
-  }
-})
+// Specify模式下的表格数据
+const drillSiteSpecifyData = ref<Array<{ wellNo: number; formula: string }>>([])
+const maxTurnAngleSpecifyData = ref<Array<{ wellNo: number; firstCurve: string; secondCurve: string }>>([])
+const customFunctionSpecifyData = ref<Array<{ wellNo: number; customFunction: string }>>([])
+const layersSpecifyData = ref<Array<{ wellNo: number; formula: string }>>([])
 
 const surfaces = inject<Ref<Surface[]>>('surfaces')!
 const activeSurfaceIndex = inject<Ref<number>>('activeSurfaceIndex')!
@@ -78,6 +55,54 @@ const wellOptions = computed(() => {
   }
   return options
 })
+
+// 监听井数变化，更新Specify表格数据
+watch(numberOfWells, (newValue) => {
+  // 更新Drill Site Specify数据
+  while (drillSiteSpecifyData.value.length < newValue) {
+    drillSiteSpecifyData.value.push({
+      wellNo: drillSiteSpecifyData.value.length + 1,
+      formula: 'Y-1000'
+    })
+  }
+  while (drillSiteSpecifyData.value.length > newValue) {
+    drillSiteSpecifyData.value.pop()
+  }
+
+  // 更新Max Turn Angle Specify数据
+  while (maxTurnAngleSpecifyData.value.length < newValue) {
+    maxTurnAngleSpecifyData.value.push({
+      wellNo: maxTurnAngleSpecifyData.value.length + 1,
+      firstCurve: '90',
+      secondCurve: '90'
+    })
+  }
+  while (maxTurnAngleSpecifyData.value.length > newValue) {
+    maxTurnAngleSpecifyData.value.pop()
+  }
+
+  // 更新Custom Function Specify数据
+  while (customFunctionSpecifyData.value.length < newValue) {
+    customFunctionSpecifyData.value.push({
+      wellNo: customFunctionSpecifyData.value.length + 1,
+      customFunction: 'theta1(2)-pi/2; theta2(3)-deg2rad(80)'
+    })
+  }
+  while (customFunctionSpecifyData.value.length > newValue) {
+    customFunctionSpecifyData.value.pop()
+  }
+
+  // 更新Layers Specify数据
+  while (layersSpecifyData.value.length < newValue) {
+    layersSpecifyData.value.push({
+      wellNo: layersSpecifyData.value.length + 1,
+      formula: ''
+    })
+  }
+  while (layersSpecifyData.value.length > newValue) {
+    layersSpecifyData.value.pop()
+  }
+}, { immediate: true })
 
 // Watch for changes in numberOfSurfaces and update surfaces array
 watch(() => otherConstraints.value.numberOfSurfaces, (newValue) => {
@@ -98,260 +123,241 @@ watch(() => otherConstraints.value.numberOfSurfaces, (newValue) => {
 </script>
 
 <template>
-  <div class="p-4 space-y-6 max-h-[calc(100vh-500px)] overflow-y-auto">
-    <!-- Drill Site Location -->
-    <div class="border rounded p-4 bg-white">
-      <div class="text-sm font-medium mb-3">Drill Site Location f(X,Y)≥0</div>
-      <div class="flex items-center space-x-2">
-        <input
-            type="checkbox"
-            v-model="otherConstraints.drillSiteEnabled"
-            class="rounded border-gray-300"
-        >
-        <span class="text-sm italic whitespace-nowrap">f(X,Y) =</span>
-        <input
-            type="text"
-            v-model="otherConstraints.drillSiteFormula"
-            class="border rounded px-2 py-1 w-64 text-sm"
-            :disabled="!otherConstraints.drillSiteEnabled"
-        >
-      </div>
-    </div>
+  <div class="pb-6 max-h-[calc(100vh-500px)] overflow-y-auto">
+    <el-collapse v-model="activeNames" class="custom-collapse">
+      <!-- Drill Site Location -->
+      <el-collapse-item title="Drill Site Location f(X,Y)≥0" name="drill-site">
+        <div class="p-4 space-y-4">
+          <!-- Unify/Specify 选择 -->
+          <div class="flex space-x-8">
+            <label class="flex items-center space-x-2">
+              <input
+                type="radio"
+                v-model="drillSiteMode"
+                value="unify"
+                class="text-blue-600"
+              >
+              <span class="text-sm">Unify</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input
+                type="radio"
+                v-model="drillSiteMode"
+                value="specify"
+                class="text-blue-600"
+              >
+              <span class="text-sm">Specify</span>
+            </label>
+          </div>
 
-    <!-- Max Turn Angle -->
-    <div class="border rounded p-4 space-y-4 bg-white">
-      <div class="text-sm font-medium">Max Turn Angle</div>
-      <div class="space-y-4">
-        <!-- First Curve -->
-        <div class="space-y-2">
-          <div class="flex items-center space-x-4">
+          <!-- Unify模式 -->
+          <div v-if="drillSiteMode === 'unify'" class="space-y-3">
             <div class="flex items-center space-x-2">
               <input
                   type="checkbox"
-                  v-model="otherConstraints.firstCurveEnabled"
+                  v-model="otherConstraints.drillSiteEnabled"
                   class="rounded border-gray-300"
               >
-              <span class="text-sm">1st curve (buildup)</span>
-            </div>
-            <div class="flex items-center space-x-1">
-              <input
-                  type="number"
-                  v-model="otherConstraints.firstCurveAngle"
-                  class="border rounded px-2 py-1 w-20 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  :disabled="!otherConstraints.firstCurveEnabled"
-              >
-              <span class="text-sm">°</span>
-            </div>
-          </div>
-          <div class="ml-6 flex items-center space-x-2">
-            <span class="text-sm whitespace-nowrap">Specify Wells:</span>
-            <label class="inline-flex items-center">
-              <input
-                  type="radio"
-                  v-model="firstCurveWellsMode"
-                  value="all"
-                  :disabled="!otherConstraints.firstCurveEnabled"
-                  class="form-radio"
-              >
-              <span class="ml-2 text-sm">All</span>
-            </label>
-            <label class="inline-flex items-center">
-              <input
-                  type="radio"
-                  v-model="firstCurveWellsMode"
-                  value="manual"
-                  :disabled="!otherConstraints.firstCurveEnabled"
-                  class="form-radio"
-              >
+              <span class="text-sm italic whitespace-nowrap">f(X,Y) =</span>
               <input
                   type="text"
-                  v-model="firstCurveWellsValue"
-                  class="ml-2 border rounded px-2 py-1 w-28 text-sm"
-                  :disabled="!otherConstraints.firstCurveEnabled || firstCurveWellsMode === 'all'"
+                  v-model="otherConstraints.drillSiteFormula"
+                  class="border rounded px-2 py-1 w-64 text-sm"
+                  :disabled="!otherConstraints.drillSiteEnabled"
               >
-            </label>
-          </div>
-        </div>
-
-        <!-- Second Curve -->
-        <div class="space-y-2">
-          <div class="flex items-center space-x-4">
-            <div class="flex items-center space-x-2">
-              <input
-                  type="checkbox"
-                  v-model="otherConstraints.secondCurveEnabled"
-                  class="rounded border-gray-300"
-              >
-              <span class="text-sm">2nd curve (buildup/drop)</span>
-            </div>
-            <div class="flex items-center space-x-1">
-              <input
-                  type="number"
-                  v-model="otherConstraints.secondCurveAngle"
-                  class="border rounded px-2 py-1 w-20 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  :disabled="!otherConstraints.secondCurveEnabled"
-              >
-              <span class="text-sm">°</span>
             </div>
           </div>
-          <div class="ml-6 flex items-center space-x-2">
-            <span class="text-sm whitespace-nowrap">Specify Wells:</span>
-            <label class="inline-flex items-center">
-              <input
-                  type="radio"
-                  v-model="secondCurveWellsMode"
-                  value="all"
-                  :disabled="!otherConstraints.secondCurveEnabled"
-                  class="form-radio"
-              >
-              <span class="ml-2 text-sm">All</span>
-            </label>
-            <label class="inline-flex items-center">
-              <input
-                  type="radio"
-                  v-model="secondCurveWellsMode"
-                  value="manual"
-                  :disabled="!otherConstraints.secondCurveEnabled"
-                  class="form-radio"
-              >
-              <input
-                  type="text"
-                  v-model="secondCurveWellsValue"
-                  class="ml-2 border rounded px-2 py-1 w-28 text-sm"
-                  :disabled="!otherConstraints.secondCurveEnabled || secondCurveWellsMode === 'all'"
-              >
-            </label>
-          </div>
-        </div>
-      </div>
 
-      <!-- Custom Function -->
-      <div class="space-y-3">
-        <div class="flex items-center space-x-2">
-          <input
-              type="checkbox"
-              v-model="otherConstraints.customFunctionEnabled"
-              class="rounded border-gray-300"
-          >
-          <span class="text-sm">Custom Function f(theta1, theta2)≥0:</span>
-        </div>
-        <div class="ml-6 grid grid-cols-[auto,1fr] items-center gap-2">
-          <span class="text-sm italic whitespace-nowrap">f(theta1, theta2) =</span>
-          <input
-              type="text"
-              v-model="otherConstraints.customFunctionFormula"
-              class="border rounded px-2 py-1 text-sm"
-              :disabled="!otherConstraints.customFunctionEnabled"
-          >
-        </div>
-      </div>
-    </div>
-
-    <!-- Layers -->
-    <div class="border rounded p-4 bg-white">
-      <div class="text-sm font-medium mb-3">Layers</div>
-      <div class="space-y-4">
-        <!-- Number of Surfaces -->
-        <div class="flex items-center space-x-3">
-          <span class="text-sm">Number of Surfaces:</span>
-          <input
-              type="number"
-              v-model="otherConstraints.numberOfSurfaces"
-              min="0"
-              class="border rounded px-2 py-1 w-20 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          >
-        </div>
-
-        <!-- Surface Tabs -->
-        <div v-if="otherConstraints.numberOfSurfaces > 0" class="border rounded">
-          <!-- Tab Headers -->
-          <div class="flex flex-wrap border-b">
-            <button
-                v-for="(_, index) in surfaces"
-                :key="index"
-                class="px-4 py-2 text-sm border-r border-b last:border-r-0 hover:bg-gray-50"
-                :class="{ 'bg-gray-100': activeSurfaceIndex === index }"
-                @click="activeSurfaceIndex = index"
-            >
-              S{{ index + 1 }}
-            </button>
-          </div>
-
-          <!-- Surface Configuration -->
-          <div class="p-4 space-y-4 overflow-y-auto max-h-[400px]">
-            <!-- Surface Definition -->
-            <div class="grid grid-cols-[auto,1fr] items-center gap-2">
-              <span class="text-sm whitespace-nowrap">Surface Definition:</span>
-              <div class="flex items-center space-x-2">
-                <select class="border rounded px-2 py-1 text-sm w-20">
-                  <option>Depth</option>
-                </select>
-                <input
-                    type="number"
-                    v-model="surfaces[activeSurfaceIndex].depth"
-                    class="border rounded px-2 py-1 w-20 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                >
-              </div>
+          <!-- Specify模式 -->
+          <div v-else class="space-y-1">
+            <div class="table-scroll-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>f(X,Y)=</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in drillSiteSpecifyData" :key="index">
+                    <td>{{ item.wellNo }}</td>
+                    <td>
+                      <input
+                        type="text"
+                        v-model="item.formula"
+                        placeholder="e.g. Y-1000"
+                      >
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
+          </div>
+        </div>
+      </el-collapse-item>
 
-            <!-- Inclination -->
+      <!-- Max Turn Angle -->
+      <el-collapse-item title="Max Turn Angle" name="max-turn-angle">
+        <div class="p-4 space-y-4">
+          <!-- Unify/Specify 选择 -->
+          <div class="flex space-x-8">
+            <label class="flex items-center space-x-2">
+              <input
+                type="radio"
+                v-model="maxTurnAngleMode"
+                value="unify"
+                class="text-blue-600"
+              >
+              <span class="text-sm">Unify</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input
+                type="radio"
+                v-model="maxTurnAngleMode"
+                value="specify"
+                class="text-blue-600"
+              >
+              <span class="text-sm">Specify</span>
+            </label>
+          </div>
+
+          <!-- Unify模式 -->
+          <div v-if="maxTurnAngleMode === 'unify'" class="space-y-4">
+            <!-- First Curve -->
             <div class="space-y-2">
-              <div class="flex items-center space-x-2">
-                <span class="text-sm whitespace-nowrap">Inclination ≤</span>
-                <input
-                    type="text"
-                    v-model="surfaces[activeSurfaceIndex].inclination"
-                    class="border rounded px-2 py-1 w-24 text-sm"
-                >
-                <span class="text-sm">°</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <span class="text-sm whitespace-nowrap">Specify Wells</span>
-                <MultiSelect
-                    v-model="surfaces[activeSurfaceIndex].selectedWells"
-                    :options="wellOptions"
-                    placeholder="Select wells"
-                />
-              </div>
-            </div>
-
-            <!-- Area Function -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="text-sm italic">Area f(X,Y) ≤ 0</span>
-                <label class="flex items-center space-x-2">
+              <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
                   <input
                       type="checkbox"
-                      v-model="surfaces[activeSurfaceIndex].displayArea"
+                      v-model="otherConstraints.firstCurveEnabled"
                       class="rounded border-gray-300"
                   >
-                  <span class="text-sm">DisplayArea</span>
-                </label>
-              </div>
-              <div class="flex items-center space-x-2">
-                <span class="text-sm italic">f(X,Y) =</span>
-                <input
-                    type="text"
-                    v-model="surfaces[activeSurfaceIndex].areaFormula"
-                    class="flex-1 border rounded px-2 py-1 text-sm"
-                >
+                  <span class="text-sm">1st curve (buildup) <=</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input
+                      type="number"
+                      v-model="otherConstraints.firstCurveAngle"
+                      class="border rounded px-2 py-1 w-20 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      :disabled="!otherConstraints.firstCurveEnabled"
+                  >
+                  <span class="text-sm">°</span>
+                </div>
               </div>
             </div>
 
-            <!-- Set Intermediate Point -->
-            <div>
-              <label class="flex items-center space-x-2">
+            <!-- Second Curve -->
+            <div class="space-y-2">
+              <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                  <input
+                      type="checkbox"
+                      v-model="otherConstraints.secondCurveEnabled"
+                      class="rounded border-gray-300"
+                  >
+                  <span class="text-sm">2nd curve (buildup/drop) <=</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input
+                      type="number"
+                      v-model="otherConstraints.secondCurveAngle"
+                      class="border rounded px-2 py-1 w-20 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      :disabled="!otherConstraints.secondCurveEnabled"
+                  >
+                  <span class="text-sm">°</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Custom Function in Unify mode -->
+            <div class="space-y-3">
+              <div class="flex items-center space-x-2">
                 <input
                     type="checkbox"
-                    v-model="surfaces[activeSurfaceIndex].setIntermediatePoint"
+                    v-model="otherConstraints.customFunctionEnabled"
                     class="rounded border-gray-300"
                 >
-                <span class="text-sm">Set intermediate point</span>
-              </label>
+                <span class="text-sm">Custom Function f(theta1, theta2)≥0:</span>
+              </div>
+              <div class="ml-6 grid grid-cols-[auto,1fr] items-center gap-2">
+                <span class="text-sm italic whitespace-nowrap">f(theta1, theta2) =</span>
+                <input
+                    type="text"
+                    v-model="otherConstraints.customFunctionFormula"
+                    class="border rounded px-2 py-1 text-sm"
+                    :disabled="!otherConstraints.customFunctionEnabled"
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Specify模式 -->
+          <div v-else class="space-y-3">
+            <!-- Max Turn Angle表格 -->
+            <div class="table-scroll-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>1st curve (°) <= </th>
+                    <th>2nd curve (°) <= </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in maxTurnAngleSpecifyData" :key="index">
+                    <td>{{ item.wellNo }}</td>
+                    <td>
+                      <input
+                        type="text"
+                        v-model="item.firstCurve"
+                        placeholder="90"
+                      >
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        v-model="item.secondCurve"
+                        placeholder="90"
+                      >
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Custom Function表格 -->
+            <div class="mt-4">
+              <h4 class="text-sm font-medium mb-2">Custom Function f(theta1, theta2)≥0</h4>
+              <div class="table-scroll-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>f(theta1, theta2)=</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, index) in customFunctionSpecifyData" :key="index">
+                      <td>{{ item.wellNo }}</td>
+                      <td>
+                        <input
+                          type="text"
+                          v-model="item.customFunction"
+                          placeholder="theta1(2)-pi/2; theta2(3)-deg2rad(80)"
+                        >
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </el-collapse-item>
+    </el-collapse>
   </div>
 </template>
+
+<style scoped>
+@import '../styles/shared.css';
+</style>

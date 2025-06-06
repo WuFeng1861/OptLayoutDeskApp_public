@@ -3,7 +3,7 @@ import { ref, inject, watch } from 'vue'
 
 const numberOfWells = inject<Readonly<Ref<number>>>('numberOfWells')!
 const doglegPoints = inject<Ref<Array<{
-  dogleg: number;
+  dogleg: string;
   radius: number;
 }>>>('doglegPoints')!
 </script>
@@ -26,10 +26,10 @@ const doglegPoints = inject<Ref<Array<{
             <td class="py-1.5 px-2 border-r text-center">{{ index + 1 }}</td>
             <td class="py-1.5 px-2 border-r">
               <input
-                type="number"
+                type="text"
                 v-model="point.dogleg"
-                class="w-full px-1.5 py-1 border rounded text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                step="0.01"
+                class="w-full px-1.5 py-1 border rounded text-right"
+                placeholder="example: 2.0 or 2.0,3.0,4.0"
               >
             </td>
             <td class="py-1.5 px-2">

@@ -30,26 +30,26 @@ const kickoffPoints = inject<Ref<Array<{pkx: number, pky: number, pkz: number}>>
 const kickoffDirections = inject<Ref<Array<{vkx: number, vky: number, vkz: number}>>>('kickoffDirections')!
 const doglegPoints = inject<Ref<Array<{dogleg: number, radius: number}>>>('doglegPoints')!
 
-// 根据problemType动态计算应该显示的面板
-const availablePanels = computed(() => {
-  const panels = ['cost-contour']
-  
-  if (computeState.value.problemType === 'K-Site-N-Wells') {
-    panels.push('optimal-layout')
-  } else if (computeState.value.problemType === '1-Sites-N-Wells') {
-    panels.push('optimal-site')
-  }
-  
-  return panels
-})
+// // 根据problemType动态计算应该显示的面板
+// const availablePanels = computed(() => {
+//   const panels = ['cost-contour']
+//
+//   if (computeState.value.problemType === 'K-Sites-N-Wells') {
+//     panels.push('optimal-layout')
+//   } else if (computeState.value.problemType === '1-Site-N-Wells') {
+//     panels.push('optimal-site')
+//   }
+//
+//   return panels
+// })
 
 // 控制折叠面板的展开状态，默认全部展开
 const activeNames = ref(['cost-contour', 'optimal-layout', 'optimal-site'])
 
 // 监听problemType变化，更新activeNames
-watch(() => computeState.value.problemType, () => {
-  activeNames.value = [...availablePanels.value]
-}, { immediate: true })
+// watch(() => computeState.value.problemType, () => {
+//   activeNames.value = [...availablePanels.value]
+// }, { immediate: true })
 
 const sendRequest = async () => {
   try {
@@ -188,10 +188,10 @@ watch(() => computeState.value.clusterSizes.length, (newLength) => {
       </el-collapse-item>
 
       <!-- Optimal Layout -->
-      <el-collapse-item 
-        v-if="computeState.problemType === '1-Site-N-Wells'"
-        title="Optimal Layout" 
-        name="optimal-layout"
+      <el-collapse-item
+          v-if="computeState.problemType === 'K-Sites-N-Wells'"
+          title="Optimal Layout"
+          name="optimal-layout"
       >
         <div class="p-4 space-y-3">
           <!-- Minimum Clusters -->
@@ -215,14 +215,17 @@ watch(() => computeState.value.clusterSizes.length, (newLength) => {
                 class="border rounded px-2 py-1 w-20 text-sm text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             >
           </div>
+          <button class="px-4 py-1 border rounded text-sm hover:bg-gray-50 transition-colors">
+            Run Optimization
+          </button>
         </div>
       </el-collapse-item>
 
       <!-- Optimal Site -->
-      <el-collapse-item 
-        v-if="computeState.problemType === 'K-Sites-N-Wells'"
-        title="Optimal Site" 
-        name="optimal-site"
+      <el-collapse-item
+          v-if="computeState.problemType === '1-Site-N-Wells'"
+          title="Optimal Site"
+          name="optimal-site"
       >
         <div class="p-4 space-y-3">
           <!-- Initial Guess -->
